@@ -1,9 +1,9 @@
-# MulVar-SOE-reconstruction
-This GitHub page is intended to store the entire code needed to recreate the results presented in the preprint [Parameter estimation for multivariate exponential sums viaiterative rational approximation](https://arxiv.org/abs/2504.19157). It is in joint work with Nadiia Derevianko.
+# MulVar SOE Reconstruction
+This GitHub page is intended to store the entire code needed to recreate the results presented in the preprint [Parameter estimation for multivariate exponential sums via iterative rational approximation](https://arxiv.org/abs/2504.19157). It is joint work with Nadiia Derevianko.
 
-The goal of this project is the recreation of multivariate SOE's (sums of exponentials) from their Fourier coefficients. To be more precisely, fix a SOE
+The goal of this project is the reconstruction of multivariate SOEs (sums of exponentials) from their Fourier coefficients. More precisely, fix an SOE
 
-$$f(t_1,\dots,t_d) = \sum_{j=1}^M \gamma_j e^{ t_1 \lambda_{j,1} + \dots+t_k \lambda_{j,d}}, $$
+$$f(t_1,\dots,t_d) = \sum_{j=1}^M \gamma_j e^{ t_1 \lambda_{j,1} + \dots+t_d \lambda_{j,d}}, $$
 
 then its Fourier coefficients are given by
 
@@ -11,8 +11,65 @@ $$c_{\mathbf{k}}(f):= \frac{1}{P^d}\int_{[0,P]^d}f(\mathbf t) e^{-\frac{2\pi i}{
 
 The weights $\gamma_j$ and frequencies $\lambda_{j,k}$ are then reconstructed in terms of a rational reconstruction problem. For more details see the linked preprint.
 
-# How to use the Code
-Just download the files `mESPIRA.py` and `Examples.ipynb`, and store them in the same folder. Then all important routines can be imported from `mESPIRA.py` in the usual way, just type
+# How to Use the Code
+The folder `Code` consists of three files: `mESPIRA.py`, which stores the reconstruction routines; `CompErr.py`, which contains a routine to compute the relative approximation error of the weights and frequencies; and `Examples.ipynb`, which displays all examples shown in the preprint. In order to use this code, download the folder or the files separately and make sure that `mESPIRA.py` and `CompErr.py` are in the same folder in which your kernel is running. Then the routines can be accessed by the usual import
 ```python
-import 
+import numpy as np
+from mESPIRA import FC_arr,rESPIRA,iESPIRA
+from CompErr import compare
+```
+
+Let us quickly discuss the given routines.First of all, `FC_arr` computes the corresponding Fourier coefficient matrix. It is recommended to use this command to ensure that the format is compatible with the actual recovery routine. Then we have two reconstruction algorithms, `rESPIRA` and `iESPIRA`, here the prefix `r` and `i` stands for `recursive` and `iterative`, respectively. Note that `rESPIRA` coincides with Algorithm 4 of the preprint, while `iESPIRA` corresponds to Algorithm 3.
+
+
+
+See the following example illustrating how to use the routines:
+```python
+import numpy as np
+from mESPIRA import FC_arr,rESPIRA,iESPIRA
+from CompErr import compare
+
+# Setting weights and frequencies
+freq = 1j*np.array([[2.21**0.5,3.33],
+                    [-5.63,-5**0.5],
+                    [-3.47,6**0.5],
+                    [-7.1**0.5,-4.5],
+                    [0.46,-9.44]])
+weig = np.array([3,2,1,2,1])
+
+
+# Setting Parameters
+P    = 4
+N    = 15
+tau  = 7
+Mmax = None
+
+
+# Creating Array with Fourier Coefficients
+coef = FC_arr(weig,freq,N,P)
+
+
+# Running Code and comparing results
+print('Results Algorithm iESPIRA')
+weig1,freq1 = iESPIRA(coef,tau=tau,P = P)
+compare(weig,freq,weig1,freq1)
+print()
+
+print('Results Algorithm rESPIRA')
+# Running Code and comparing results
+weig1,freq1 = rESPIRA(coef,Mmax=Mmax,P = P)
+compare(weig,freq,weig1,freq1)
+```
+
+**Output**
+```text
+Results Algorithm iESPIRA
+err(freq)       	:  8.181963402957387e-14
+err(weig)       	:  3.212351669189136e-13
+err([-10,10]^2)    	:  8.406726045197592e-13
+
+Results Algorithm rESPIRA
+err(freq)       	:  8.181963402957387e-14
+err(weig)       	:  3.010293531911448e-13
+err([-10,10]^2)    	:  7.6274899024679e-13
 ```

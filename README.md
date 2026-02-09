@@ -1,5 +1,5 @@
 # MulVar SOE Reconstruction
-This GitHub page is intended to store the entire code needed to recreate the results presented in the preprint [Parameter estimation for multivariate exponential sums via iterative rational approximation](https://arxiv.org/abs/2504.19157). It is joint work with Nadiia Derevianko.
+This GitHub page is intended to store the entire code needed to recreate the results presented in the preprint [Parameter estimation for multivariate exponential sums via iterative rational approximation](https://arxiv.org/abs/2504.19157). It is joint work with [Nadiia Derevianko](https://www.cs.cit.tum.de/sccs/personen/nadiia-derevianko/).
 
 The goal of this project is the reconstruction of multivariate SOEs (sums of exponentials) from their Fourier coefficients. More precisely, fix an SOE
 

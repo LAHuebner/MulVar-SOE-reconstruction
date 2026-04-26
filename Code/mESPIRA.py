@@ -1,5 +1,5 @@
 from numpy import pi,exp,isfinite,round,prod,result_type,empty,ix_,array,arange,argmax,append,hstack
-from numpy import zeros,eye,diag,delete,einsum,argmin,vstack,min
+from numpy import zeros,eye,diag,delete,einsum,argmin,vstack,min,minimum
 from numpy.linalg import svd,lstsq,solve
 from scipy.linalg import eig
 
@@ -138,39 +138,8 @@ def __AAA_part(F,K,prec=1e-10,Mmax=None,LP = 0,pinfo=0,P=1):
     a     = lstsq(1/(K[:,None]-b),F0,rcond=None)[0]
     return a,b.tolist()
 
-def __LP_part(coef):
-    N  = len(coef)//2
-    k  = arange(-N,N+1)
-    k1 = arange(-N,N+1,2)
-    k2 = arange(-N+1,N+1,2)
-
-    L0 = (coef[::2][:,None]-coef[1::2])/(k1[:,None]-k2)
-    L1 = ((k*coef)[::2][:,None]-(k*coef)[1::2])/(k1[:,None]-k2)
 
 
-    L  = hstack([L0,L1])
-    _,D,W = svd(L,full_matrices=False)
-    M = sum(D>1e-12)
-
-    return eig(solve(W[:M,:M],W[:M,N:N+M]))[0]
-def __LP_part(coef):
-    N  = len(coef)//2
-    k  = arange(-N,N+1)
-    k1 = arange(-N,0)
-    k2 = arange(1,N+1)
-
-    c1 = coef[:N]
-    c2 = coef[N+1:]
-
-    L0 = (c1[:,None]-c2)/(k1[:,None]-k2)
-    L1 = ((k1*c1)[:,None]-(k2*c2))/(k1[:,None]-k2)
-
-
-    L  = hstack([L0,L1])
-    _,D,W = svd(L,full_matrices=False)
-    M = sum(D>1e-12)
-
-    return eig(solve(W[:M,:M],W[:M,N:N+M]))[0]
 
 def __LP_part(coef):
     N  = len(coef)//2
@@ -178,15 +147,8 @@ def __LP_part(coef):
     k1 = k[N-N//2-1:-(N-N//2)]
     k2 = array(list(k[:N-N//2-1])+list(k[-(N-N//2):]))
 
-    # print(k1)
-    # print(k2)
-
-
-
     c1 = coef[N-N//2-1:-(N-N//2)]
     c2 = array(list(coef[:N-N//2-1])+list(coef[-(N-N//2):]))
-
-
 
     L0 = (c1[:,None]-c2)/(k1[:,None]-k2)
     L1 = ((k1*c1)[:,None]-(k2*c2))/(k1[:,None]-k2)
@@ -292,8 +254,40 @@ def rESPIRA(fc,Mmax=None,prec=1e-10,P=1,LP=0,pinfo=False):
 
     return weig,freq
 
+def __comp_tau(b1,b2,N,M):
+    for k in range(N-M):
+        if max(abs(b1-b2+2*k))>0.1:
+            return k
+    return k
 
-def iESPIRA(fc,tau,prec=1e-12,P=1,LP=0,pinfo=0):
+
+def iESPIRA(fc,tau=None,prec=1e-12,P=1,LP=0,pinfo=0):
+    '''
+    Given the Fourier Coefficients (as well as the corresponding periodicity length), this
+    routine reconstructs the weights and requencies of an multivariate SOE.
+
+    Note that the Fourier coefficients (fc) need to satisfy a special format. Let the wanted
+    SOE f be d-variate, then fc[k_1,...,k_d] has to coincide with the Fourier coefficient 
+    c(f)[k_1,...,k_d].
+
+    Inpute:
+      - fc    : d-dimensional numpy.ndarray, contains the Fourier coefficients.
+      - tau   : integer, shift for the diagonal Fourier coefficients (See paper.).
+      - Mmax  : integer (default None), sets an upperbound for the wanted SOE order.
+      - prec  : float>0, determines the accuracy level for the underlying AAA routine.
+      - P     : float>0, sets the perioticity length corresponding to the Fourier coefficients.
+      - LP    : 0,1 or 2: "stands for Loewener Pencil", it determines which solver/minimizer
+                within the AAA routine is used. For LP=0 (default), the classical AAA routine
+                is used, for LP=1 the LP approach is only used in order to determine the poles
+                in the final iteration, for LP=2 the LP approach is also used in order to solve
+                the minimization problem within the AAA routine.
+      - pinfo : bool, (print info) if true then additional information regarding the iterative 
+                AAA error is printed.
+                
+    Output:
+     - weig   : 1D-numpy.ndarray, containing the reconstructed weights.
+     - freq   : dD-numpy.ndarray, containing the reconstructed weights.'''
+    
     d = len(fc.shape)
     N = fc.shape[0]//2
     A = []
@@ -314,25 +308,34 @@ def iESPIRA(fc,tau,prec=1e-12,P=1,LP=0,pinfo=0):
         else:
             M = len(a)
 
-    if 2*N+1-2*tau<2*M:
+
+    if type(tau)==type(int) and 2*N+1-2*tau<2*M:
         print('Not enough diagonal coefficients given')
         return
     for k in range(d-1):
-        F = array([fc[tuple(k*[N]+[l]+[l+2*tau]+(d-2-k)*[N])] for l in range(2*N+1-2*tau)])
+        if type(tau)==type(None):
+            tau1 = __comp_tau(B[k],B[k+1],N,M)
+        else:
+            tau1 = tau
+
+
+        F = array([fc[tuple(k*[N]+[l]+[l+2*tau1]+(d-2-k)*[N])] for l in range(2*N+1-2*tau1)])
         
-        b = hstack([B[k],B[k+1]-2*tau])
-        c = lstsq(1/(arange(-N,N+1-2*tau)[:,None]-b),F,rcond=None)[0]
+        b = hstack([B[k],B[k+1]-2*tau1])
+        c = lstsq(1/(arange(-N,N+1-2*tau1)[:,None]-b),F,rcond=None)[0]
         #c,d = AAA_part(F,np.arange(-2*N+tau,2*N+1-tau),prec,pinfo=pinfo)
         c1 = c[:M]
         c2 = c[M:]
 
         I = []
         for j in range(M):
-            J = arange(M)[abs(c1[j]+c2)/abs(c1[j])<1e-5]
+            mask = (abs(c1[j] + c2) / minimum(abs(c1[j]), abs(c2))) < 1e-5
+            J    = arange(M)[mask]
+            #J = arange(M)[[(abs(c1[j]+c2[k]) / min([abs(c1[j]),abs(c2[k])])) <1e-5 for k in range(M)]]
             if len(J)==0:
                 J = arange(M)
                 
-            i = argmin(abs(A[k][j]-(c1[j]*B[k+1][J]+c2[J]*B[k][j])/B[k+1][J]))
+            i = argmin(abs(A[k][j]-(c1[j]*(B[k+1][J]-2*tau1)+c2[J]*B[k][j])/B[k+1][J]))
             I +=[J[i]]
         B[k+1]=B[k+1][I]
         A[k+1]=A[k+1][I]

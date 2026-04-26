@@ -19,7 +19,7 @@ from mESPIRA import FC_arr,rESPIRA,iESPIRA
 from CompErr import compare
 ```
 
-Let us quickly discuss the given routines.First of all, `FC_arr` computes the corresponding Fourier coefficient matrix. It is recommended to use this command to ensure that the format is compatible with the actual recovery routine. Then we have two reconstruction algorithms, `rESPIRA` and `iESPIRA`, here the prefix `r` and `i` stands for `recursive` and `iterative`, respectively. Note that `rESPIRA` coincides with Algorithm 4 of the preprint, while `iESPIRA` corresponds to Algorithm 3.
+Let us quickly discuss the given routines. First of all, `FC_arr` computes the corresponding Fourier coefficient matrix. It is recommended to use this command to ensure that the format is compatible with the actual recovery routine. Then we have two reconstruction algorithms, `rESPIRA` and `iESPIRA`, here the prefix `r` and `i` stands for `recursive` and `iterative`, respectively. Note that `rESPIRA` coincides with Algorithm 4 of the preprint, while `iESPIRA` corresponds to Algorithm 3. The routine `compare` determines the reconstruction errors.
 
 
 
@@ -64,12 +64,12 @@ compare(weig,freq,weig1,freq1)
 **Output**
 ```text
 Results Algorithm iESPIRA
-err(freq)       	:  8.181963402957387e-14
-err(weig)       	:  3.212351669189136e-13
-err([-10,10]^2)    	:  8.406726045197592e-13
+err(freq)       	:  8.1820e-14
+err(weig)       	:  3.2124e-13
+err([-10,10]^2)    	:  8.4067e-13
 
 Results Algorithm rESPIRA
-err(freq)       	:  8.181963402957387e-14
-err(weig)       	:  3.010293531911448e-13
-err([-10,10]^2)    	:  7.6274899024679e-13
+err(freq)       	:  8.1820e-14
+err(weig)       	:  3.0103e-13
+err([-10,10]^2)    	:  7.6275e-13
 ```
